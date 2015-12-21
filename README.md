@@ -31,8 +31,6 @@ unusable on a mobile site.
 
 ##Usage:
 
-&nbsp;
-
 To build the application navigate to the root directory and run 'mvn clean install'
 
 To run (using an external test website):
@@ -42,7 +40,6 @@ This will create a new folder 'downloads' which will be populated with pictures 
 in the original size/format, and resized to 100, 220, 320 width in jpg and png formats.
 
 ##Design Summary
-&nbsp;
 
 The application is built using [Spring](https://spring.io/)/[Spring Integration](http://projects.spring.io/spring-integration/). This decision was made to take advantage of some components offered
 out of the box by Spring Integration notably Splitter, Filter and Aggregator and also simple integration of multithreading.
