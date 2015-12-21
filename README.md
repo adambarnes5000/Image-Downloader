@@ -1,3 +1,26 @@
+Spec
+
+You are required to build a tool with a command line interface that will be able to download all
+images from given HTML page, save them to local disk and transcode them to different sizes and
+formats
+
+Processed images can be later used on a mobile site.
+
+Minimal functionality
+1. Downloader tool has to accept at least two parameters: URL of a source page and location of
+output directory on local disc
+2. It has to download all images defined with <img> tag on this page to specified directory
+3. Tool should be optimized to download only new or modified images. Images that have not
+been changed since tool was last run and still exist in specified directory should be omitted
+4. Once the image is downloaded, it should be resized to three different sizes: width 100px,
+220px and 320px with preserved width/height ratio
+5. Each of the three image sizes should be saved in at least 2 formats: png and jpg
+6. Since tool can be used to parse large number of different HTML pages the application should
+consider performance
+7. Tool can skip very small images (width or height <= 10 pixels) since they are most likely
+unusable on a mobile site.
+
+
 Requirements
 
 Java JDK (http://www.oracle.com/technetwork/java/javase/downloads/index.html)
