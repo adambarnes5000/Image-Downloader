@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:task="http://www.springframework.org/schema/task">
+
+
+    <int:gateway service-interface="com.acme.imagedownloader.ImageDownloadingService" />
+
+    <int:channel id="webPageInChannel" />
+    <int:channel id="imagesCountOutChannel" />
+
+    <int:splitter   ref="webPageToImagesSplitter"
+                    input-channel="webPageInChannel"
+                    output-channel="imageUrlsChannel" />
+
+    <int:channel id="imageUrlsChannel">
+        <!-- Use dispatcher here for multithreading -->
+        <int:dispatcher task-executor="executor" />
+    </int:channel>
+
+    <int:header-enricher input-channel="imageUrlsChannel" output-channel="imageUrlsWithFilenameChannel" >
+        <int:header name="filename" method="getFilenameFromFullUrl" ref="fileService"/>
+        <int:header name="errorChannel" ref="processedImagesChannel"/>
+    </int:header-enricher>
+
+    <int:channel id="imageUrlsWithFilenameChannel" />
+
+    <int:filter     ref="unchangedImageFilter"
+                    input-channel="imageUrlsWithFilenameChannel"
+                    output-channel="newImageUrlsChannel"
+                    discard-channel="processedImagesChannel" />
+
+    <int:channel id="newImageUrlsChannel" />
+
+    <int:transformer ref="imageUrlReader"
+                     input-channel="newImageUrlsChannel"
+                     output-channel="imagesChannel" />
+
+    <int:channel id="imagesChannel" />
+
+    <int:filter     ref="imageSizeFilter"
+                    input-channel="imagesChannel"
+                    output-channel="validSizeImagesChannel"
+                    discard-channel="processedImagesChannel" />
+
+    <int:channel id="validSizeImagesChannel" />
+
+    <int:service-activator ref="imageSaver" method="saveImages"
+                           input-channel="validSizeImagesChannel"
+                           output-channel="processedImagesChannel" />
+
+    <int:channel id="processedImagesChannel" />
+
+    <int:aggregator ref="resultAggregator"
+                    input-channel="processedImagesChannel"
+                    output-channel="imagesCountOutChannel"
+                    group-timeout="30000"
+                    send-partial-result-on-expiry="true"
+                    />
+
+    <bean id="resultAggregator" class="com.acme.imagedownloader.ResultAggregator" />
+
+    <bean id="webPageToImagesSplitter" class="com.acme.imagedownloader.WebPageToImagesSplitter" >
+        <property name="urlParser" ref="urlParser" />
+    </bean>
+
+    <bean id="imageUrlReader" class="com.acme.imagedownloader.ImageURLReader" />
+
+    <bean id="fileService" class="com.acme.imagedownloader.FileService" />
+
+    <bean id="imageSizeFilter" class="com.acme.imagedownloader.ImageSizeFilter" />
+
+    <bean id="urlParser" class="com.acme.imagedownloader.UrlParser" />
+
+    <bean id="unchangedImageFilter" class="com.acme.imagedownloader.UnchangedImageFilter">
+        <property name="fileService" ref="fileService" />
+    </bean>
+
+    <bean id="imageSaver" class="com.acme.imagedownloader.ImageSaver">
+        <property name="fileService" ref="fileService" />
+        <property name="imageService" ref="imageService" />
+        <property name="imageWidths">
+            <list>
+                <value>100</value>
+                <value>220</value>
+                <value>320</value>
+            </list>
+        </property>
+        <property name="imageFormats">
+            <list>
+                <value>png</value>
+                <value>jpg</value>
+            </list>
+        </property>
+    </bean>
+    
+    <bean id="imageService" class="com.acme.imagedownloader.ImageService" />
+
+    <task:executor id="executor" pool-size="20"/>
+
+</beans>
